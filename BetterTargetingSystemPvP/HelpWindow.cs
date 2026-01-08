@@ -9,10 +9,10 @@ namespace BetterTargetingSystem.Windows
     {
         public HelpWindow(Plugin plugin) : base(
             "Better Targeting System - Help",
-            ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+            (Dalamud.Bindings.ImGui.ImGuiWindowFlags)(ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
         {
             this.Size = new Vector2(768, 512);
-            this.SizeCondition = ImGuiCond.Appearing;
+            this.SizeCondition = (Dalamud.Bindings.ImGui.ImGuiCond)ImGuiCond.Appearing;
         }
 
         public override void Draw()
