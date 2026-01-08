@@ -16,7 +16,23 @@ public unsafe class Utils
     private static RaptureAtkModule* RaptureAtkModule => CSFramework.Instance()->GetUIModule()->GetRaptureAtkModule();
     internal static bool IsTextInputActive => RaptureAtkModule->AtkModule.IsTextInputActive();
 
-    internal static bool CanAttack(IGameObject obj) => true; 
+    internal static bool CanAttack(IGameObject obj) => true;
+
+    /// <summary>
+    /// Converts a ClientStructs FFXIVClientStructs.FFXIV.Common.Math.Vector3 to System.Numerics.Vector3
+    /// </summary>
+    internal static Vector3 ToVec3(FFXIVClientStructs.FFXIV.Common.Math.Vector3 vec)
+    {
+        return new Vector3(vec.X, vec.Y, vec.Z);
+    }
+
+    /// <summary>
+    /// Converts a GameObject position to System.Numerics.Vector3 with optional Y offset
+    /// </summary>
+    internal static Vector3 ToVec3(GameObject* go, float yOffset = 0)
+    {
+        return new Vector3(go->Position.X, go->Position.Y + yOffset, go->Position.Z);
+    } 
 
     internal static float DistanceBetweenObjects(IGameObject source, IGameObject target)
     {
@@ -40,13 +56,13 @@ public unsafe class Utils
 
     internal static bool IsInFrontOfCamera(IGameObject obj, float maxAngle)
     {
-        if (Plugin.Instance.ClientState.LocalPlayer == null)
+        if (Plugin.Instance.ObjectTable.LocalPlayer == null)
             return false;
 
         var rotation = GetCameraRotation();
         var faceVec = new Vector2((float)Math.Cos(rotation), (float)Math.Sin(rotation));
 
-        var dir = obj.Position - Plugin.Instance.ClientState.LocalPlayer.Position;
+        var dir = obj.Position - Plugin.Instance.ObjectTable.LocalPlayer.Position;
         var dirVec = new Vector2(dir.Z, dir.X);
         var angle = Math.Acos(Vector2.Dot(dirVec, faceVec) / dirVec.Length() / faceVec.Length());
         return angle <= Math.PI * maxAngle / 360;
@@ -59,19 +75,17 @@ public unsafe class Utils
         if (useCamera)
         {
             var cam = CameraManager.Instance()->CurrentCamera;
-            // Manual read to System.Numerics from ClientStructs
-            sourcePos = new Vector3(cam->Object.Position.X, cam->Object.Position.Y, cam->Object.Position.Z);
+            sourcePos = ToVec3(cam->Object.Position);
         }
         else
         {
-            if (Plugin.Instance.ClientState.LocalPlayer == null) return false;
-            var player = (GameObject*)Plugin.Instance.ClientState.LocalPlayer.Address;
-            sourcePos = new Vector3(player->Position.X, player->Position.Y + 2, player->Position.Z);
+            if (Plugin.Instance.ObjectTable.LocalPlayer == null) return false;
+            var player = (GameObject*)Plugin.Instance.ObjectTable.LocalPlayer.Address;
+            sourcePos = ToVec3(player, 2);
         }
 
         // 2. Setup Target (System.Numerics)
-        var tPos = target->Position;
-        var targetPos = new Vector3(tPos.X, tPos.Y + 2, tPos.Z);
+        var targetPos = ToVec3(target, 2);
 
         // 3. Math
         var direction = targetPos - sourcePos;
