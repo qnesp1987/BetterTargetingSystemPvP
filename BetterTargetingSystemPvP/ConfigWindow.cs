@@ -4,8 +4,9 @@ using ImGuiNET;
 using System;
 using System.Numerics;
 using BetterTargetingSystem.Keybinds;
+using BetterTargetingSystem;
 
-namespace BetterTargetingSystemPvP
+namespace BetterTargetingSystem.Windows
 {
     public class ConfigWindow : Window, IDisposable
     {
