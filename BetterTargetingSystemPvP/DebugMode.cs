@@ -1,5 +1,5 @@
 using Dalamud.Game.ClientState.Conditions;
-using ImGuiNET;
+using ImGuiNET = Dalamud.Bindings.ImGui; // CHANGED: Points to SDK's ImGui
 using System;
 using System.Linq;
 using System.Numerics;
@@ -30,7 +30,7 @@ public unsafe class DebugMode
             pos.Y,
             pos.Z),
             out Vector2 v2Local);
-        ImGui.GetWindowDrawList().PathLineTo(v2Local);
+        ImGuiNET.ImGui.GetWindowDrawList().PathLineTo(v2Local);
 
         var cone1HalfAngle = Plugin.Configuration.Cone1Angle / 2;
         var cone2HalfAngle = Plugin.Configuration.Cone2Angle / 2;
@@ -51,13 +51,13 @@ public unsafe class DebugMode
                     pos.Z + distance * (float)Math.Cos(rad)),
                 out Vector2 vector2);
 
-            ImGui.GetWindowDrawList().PathLineTo(vector2);
+            ImGuiNET.ImGui.GetWindowDrawList().PathLineTo(vector2);
         }
 
-        ImGui.GetWindowDrawList().PathLineTo(v2Local);
+        ImGuiNET.ImGui.GetWindowDrawList().PathLineTo(v2Local);
 
-        var color = ImGui.ColorConvertFloat4ToU32(new Vector4(1, 0, 0, 0.4f));
-        ImGui.GetWindowDrawList().PathFillConvex(color);
+        var color = ImGuiNET.ImGui.ColorConvertFloat4ToU32(new Vector4(1, 0, 0, 0.4f));
+        ImGuiNET.ImGui.GetWindowDrawList().PathFillConvex(color);
     }
 
     public void DrawCircle()
@@ -76,11 +76,11 @@ public unsafe class DebugMode
                     pos.Z + distance * (float)Math.Cos(rad)),
                 out Vector2 vector2);
 
-            ImGui.GetWindowDrawList().PathLineTo(vector2);
+            ImGuiNET.ImGui.GetWindowDrawList().PathLineTo(vector2);
         }
 
-        var color = ImGui.ColorConvertFloat4ToU32(new Vector4(0, 0, 1, 0.4f));
-        ImGui.GetWindowDrawList().PathFillConvex(color);
+        var color = ImGuiNET.ImGui.ColorConvertFloat4ToU32(new Vector4(0, 0, 1, 0.4f));
+        ImGuiNET.ImGui.GetWindowDrawList().PathFillConvex(color);
     }
 
     public void Draw()
@@ -92,10 +92,10 @@ public unsafe class DebugMode
             || Plugin.Condition[ConditionFlag.BoundByDuty] || Plugin.Condition[ConditionFlag.BetweenAreas])
             return;
 
-        ImGui.Begin("Canvas",
-            ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoTitleBar |
-            ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
-        ImGui.SetWindowSize(ImGui.GetIO().DisplaySize);
+        ImGuiNET.ImGui.Begin("Canvas",
+            ImGuiNET.ImGuiWindowFlags.NoInputs | ImGuiNET.ImGuiWindowFlags.NoNav | ImGuiNET.ImGuiWindowFlags.NoTitleBar |
+            ImGuiNET.ImGuiWindowFlags.NoScrollbar | ImGuiNET.ImGuiWindowFlags.NoBackground);
+        ImGuiNET.ImGui.SetWindowSize(ImGuiNET.ImGui.GetIO().DisplaySize);
 
         DrawCones();
 
@@ -116,25 +116,25 @@ public unsafe class DebugMode
             foreach (var target in OnScreenTargets)
                 HighlightTarget(target, new Vector4(0, 1, 0, 1));
         }
-        ImGui.End();
+        ImGuiNET.ImGui.End();
     }
 
     private void HighlightTarget(DalamudGameObject target, Vector4 colour)
     {
         Plugin.GameGui.WorldToScreen(target.Position, out var screenPos);
         
-        var camera = CameraManager.Instance()->CurrentCamera; // Fixed access
+        var camera = CameraManager.Instance()->CurrentCamera; 
         var distance = Utils.DistanceBetweenObjects(camera->Object.Position, target.Position, 0);
         
         var go = (GameObject*)target.Address;
         var size = (int)Math.Round(100 * (25 / distance)) * Math.Max(target.HitboxRadius, go->Height);
         
-        ImGui.GetWindowDrawList().AddRect(
+        ImGuiNET.ImGui.GetWindowDrawList().AddRect(
             new Vector2(screenPos.X - (size / 2), screenPos.Y),
             new Vector2(screenPos.X + (size / 2), screenPos.Y - size),
-            ImGui.GetColorU32(colour),
+            ImGuiNET.ImGui.GetColorU32(colour),
             0f,
-            ImDrawFlags.None,
+            ImGuiNET.ImDrawFlags.None,
             3f);
     }
 }
