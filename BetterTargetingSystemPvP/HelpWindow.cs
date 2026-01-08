@@ -9,11 +9,11 @@ public class HelpWindow : Window, IDisposable
 {
     public HelpWindow(Plugin plugin) : base(
         "Better Targeting System - Help",
-        // Cast: Convert ImGuiNET flags -> Dalamud.Interface.Windowing flags
+        // Cast necessary: Window constructor expects Dalamud.Interface.Windowing.ImGuiWindowFlags
         (Dalamud.Interface.Windowing.ImGuiWindowFlags)(ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
     {
         this.Size = new Vector2(768, 512);
-        // Cast: Convert ImGuiNET cond -> Dalamud.Interface.Windowing cond
+        // Cast necessary: SizeCondition expects Dalamud.Interface.Windowing.ImGuiCond
         this.SizeCondition = (Dalamud.Interface.Windowing.ImGuiCond)ImGuiCond.Appearing;
     }
 

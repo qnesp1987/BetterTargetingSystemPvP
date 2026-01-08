@@ -20,10 +20,10 @@ public unsafe class DebugMode
 
     public void DrawCones()
     {
-        if (Plugin.ClientState.LocalPlayer == null)
+        if (Plugin.ObjectTable.LocalPlayer == null)
             return;
 
-        var pos = Plugin.ClientState.LocalPlayer.Position;
+        var pos = Plugin.ObjectTable.LocalPlayer.Position;
 
         Plugin.GameGui.WorldToScreen(new Vector3(
             pos.X,
@@ -62,11 +62,11 @@ public unsafe class DebugMode
 
     public void DrawCircle()
     {
-        if (Plugin.ClientState.LocalPlayer == null)
+        if (Plugin.ObjectTable.LocalPlayer == null)
             return;
 
         var distance = Plugin.Configuration.CloseTargetsCircleRadius;
-        var pos = Plugin.ClientState.LocalPlayer.Position;
+        var pos = Plugin.ObjectTable.LocalPlayer.Position;
         for (var degrees = 0; degrees <= 360; degrees += 10)
         {
             float rad = (float)(degrees * Math.PI / 180);
@@ -85,7 +85,7 @@ public unsafe class DebugMode
 
     public void Draw()
     {
-        if (Plugin.ClientState.LocalPlayer == null)
+        if (Plugin.ObjectTable.LocalPlayer == null)
             return;
 
         if (Plugin.Condition[ConditionFlag.InCombat] || Plugin.Condition[ConditionFlag.InFlight]
@@ -124,13 +124,13 @@ public unsafe class DebugMode
         Plugin.GameGui.WorldToScreen(target.Position, out var screenPos);
         
         var camera = CameraManager.Instance()->CurrentCamera;
-        var camPos = camera->Object.Position;
-        // Manual conversion to System.Numerics for the utility call
-        var sourceV3 = new Vector3(camPos.X, camPos.Y, camPos.Z);
+        var sourceV3 = Utils.ToVector3(camera->Object.Position);
         
         var distance = Utils.DistanceBetweenObjects(sourceV3, target.Position, 0);
         
         var go = (GameObject*)target.Address;
+        if (go == null) return; // Safety check for pointer conversion
+        
         var size = (int)Math.Round(100 * (25 / distance)) * Math.Max(target.HitboxRadius, go->Height);
         
         ImGui.GetWindowDrawList().AddRect(

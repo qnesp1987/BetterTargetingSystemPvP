@@ -20,11 +20,11 @@ namespace BetterTargetingSystem.Windows
 
         public ConfigWindow(Plugin plugin) : base(
             "Better Targeting System",
-            // Cast: Convert ImGuiNET flags -> Dalamud.Interface.Windowing flags
+            // Cast necessary: Window constructor expects Dalamud.Interface.Windowing.ImGuiWindowFlags
             (Dalamud.Interface.Windowing.ImGuiWindowFlags)(ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
         {
             this.Size = new Vector2(185, 270);
-            // Cast: Convert ImGuiNET cond -> Dalamud.Interface.Windowing cond
+            // Cast necessary: SizeCondition expects Dalamud.Interface.Windowing.ImGuiCond
             this.SizeCondition = (Dalamud.Interface.Windowing.ImGuiCond)ImGuiCond.Appearing; 
 
             this.Plugin = plugin;
