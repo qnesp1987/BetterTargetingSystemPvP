@@ -21,8 +21,13 @@ public unsafe class Utils
         => new Vector3(pos.X, pos.Y, pos.Z);
 
     // Helper: Convert GameObject position to System.Numerics.Vector3 with optional Y offset
-    internal static Vector3 ToVector3(GameObject* go, float yOffset = 0) 
-        => new Vector3(go->Position.X, go->Position.Y + yOffset, go->Position.Z);
+    // Note: Caller should ensure go is not null before calling this method
+    internal static Vector3 ToVector3(GameObject* go, float yOffset = 0)
+    {
+        if (go == null)
+            throw new ArgumentNullException(nameof(go), "GameObject pointer cannot be null");
+        return new Vector3(go->Position.X, go->Position.Y + yOffset, go->Position.Z);
+    }
 
     internal static bool CanAttack(IGameObject obj) => true; 
 
@@ -62,6 +67,8 @@ public unsafe class Utils
 
     internal static bool IsInLineOfSight(GameObject* target, bool useCamera = false)
     {
+        if (target == null) return false; // Validate target parameter
+
         // 1. Setup Source (System.Numerics)
         Vector3 sourcePos;
         if (useCamera)
@@ -73,6 +80,7 @@ public unsafe class Utils
         {
             if (Plugin.Instance.ObjectTable.LocalPlayer == null) return false;
             var player = (GameObject*)Plugin.Instance.ObjectTable.LocalPlayer.Address;
+            if (player == null) return false; // Validate player pointer after cast
             sourcePos = ToVector3(player, yOffset: 2);
         }
 
