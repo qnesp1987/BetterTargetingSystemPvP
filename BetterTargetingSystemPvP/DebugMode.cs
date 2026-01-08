@@ -20,10 +20,10 @@ public unsafe class DebugMode
 
     public void DrawCones()
     {
-        if (Plugin.ClientState.LocalPlayer == null)
+        if (Plugin.ObjectTable.LocalPlayer == null)
             return;
 
-        var pos = Plugin.ClientState.LocalPlayer.Position;
+        var pos = Plugin.ObjectTable.LocalPlayer.Position;
 
         Plugin.GameGui.WorldToScreen(new Vector3(
             pos.X,
@@ -62,11 +62,11 @@ public unsafe class DebugMode
 
     public void DrawCircle()
     {
-        if (Plugin.ClientState.LocalPlayer == null)
+        if (Plugin.ObjectTable.LocalPlayer == null)
             return;
 
         var distance = Plugin.Configuration.CloseTargetsCircleRadius;
-        var pos = Plugin.ClientState.LocalPlayer.Position;
+        var pos = Plugin.ObjectTable.LocalPlayer.Position;
         for (var degrees = 0; degrees <= 360; degrees += 10)
         {
             float rad = (float)(degrees * Math.PI / 180);
@@ -85,7 +85,7 @@ public unsafe class DebugMode
 
     public void Draw()
     {
-        if (Plugin.ClientState.LocalPlayer == null)
+        if (Plugin.ObjectTable.LocalPlayer == null)
             return;
 
         if (Plugin.Condition[ConditionFlag.InCombat] || Plugin.Condition[ConditionFlag.InFlight]
