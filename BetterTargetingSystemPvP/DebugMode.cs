@@ -124,13 +124,13 @@ public unsafe class DebugMode
         Plugin.GameGui.WorldToScreen(target.Position, out var screenPos);
         
         var camera = CameraManager.Instance()->CurrentCamera;
-        var camPos = camera->Object.Position;
-        // Manual conversion to System.Numerics for the utility call
-        var sourceV3 = new Vector3(camPos.X, camPos.Y, camPos.Z);
+        var sourceV3 = Utils.ToVector3(camera->Object.Position);
         
         var distance = Utils.DistanceBetweenObjects(sourceV3, target.Position, 0);
         
         var go = (GameObject*)target.Address;
+        if (go == null) return; // Safety check for pointer conversion
+        
         var size = (int)Math.Round(100 * (25 / distance)) * Math.Max(target.HitboxRadius, go->Height);
         
         ImGui.GetWindowDrawList().AddRect(

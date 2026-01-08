@@ -16,6 +16,14 @@ public unsafe class Utils
     private static RaptureAtkModule* RaptureAtkModule => CSFramework.Instance()->GetUIModule()->GetRaptureAtkModule();
     internal static bool IsTextInputActive => RaptureAtkModule->AtkModule.IsTextInputActive();
 
+    // Helper: Convert ClientStruct position to System.Numerics.Vector3
+    internal static Vector3 ToVector3(FFXIVClientStructs.FFXIV.Common.Math.Vector3 pos) 
+        => new Vector3(pos.X, pos.Y, pos.Z);
+
+    // Helper: Convert GameObject position to System.Numerics.Vector3 with optional Y offset
+    internal static Vector3 ToVector3(GameObject* go, float yOffset = 0) 
+        => new Vector3(go->Position.X, go->Position.Y + yOffset, go->Position.Z);
+
     internal static bool CanAttack(IGameObject obj) => true; 
 
     internal static float DistanceBetweenObjects(IGameObject source, IGameObject target)
@@ -59,19 +67,17 @@ public unsafe class Utils
         if (useCamera)
         {
             var cam = CameraManager.Instance()->CurrentCamera;
-            // Manual read to System.Numerics from ClientStructs
-            sourcePos = new Vector3(cam->Object.Position.X, cam->Object.Position.Y, cam->Object.Position.Z);
+            sourcePos = ToVector3(cam->Object.Position);
         }
         else
         {
             if (Plugin.Instance.ObjectTable.LocalPlayer == null) return false;
             var player = (GameObject*)Plugin.Instance.ObjectTable.LocalPlayer.Address;
-            sourcePos = new Vector3(player->Position.X, player->Position.Y + 2, player->Position.Z);
+            sourcePos = ToVector3(player, yOffset: 2);
         }
 
         // 2. Setup Target (System.Numerics)
-        var tPos = target->Position;
-        var targetPos = new Vector3(tPos.X, tPos.Y + 2, tPos.Z);
+        var targetPos = ToVector3(target, yOffset: 2);
 
         // 3. Math
         var direction = targetPos - sourcePos;
