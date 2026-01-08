@@ -40,13 +40,13 @@ public unsafe class Utils
 
     internal static bool IsInFrontOfCamera(IGameObject obj, float maxAngle)
     {
-        if (Plugin.Instance.ClientState.LocalPlayer == null)
+        if (Plugin.Instance.ObjectTable.LocalPlayer == null)
             return false;
 
         var rotation = GetCameraRotation();
         var faceVec = new Vector2((float)Math.Cos(rotation), (float)Math.Sin(rotation));
 
-        var dir = obj.Position - Plugin.Instance.ClientState.LocalPlayer.Position;
+        var dir = obj.Position - Plugin.Instance.ObjectTable.LocalPlayer.Position;
         var dirVec = new Vector2(dir.Z, dir.X);
         var angle = Math.Acos(Vector2.Dot(dirVec, faceVec) / dirVec.Length() / faceVec.Length());
         return angle <= Math.PI * maxAngle / 360;
@@ -64,8 +64,8 @@ public unsafe class Utils
         }
         else
         {
-            if (Plugin.Instance.ClientState.LocalPlayer == null) return false;
-            var player = (GameObject*)Plugin.Instance.ClientState.LocalPlayer.Address;
+            if (Plugin.Instance.ObjectTable.LocalPlayer == null) return false;
+            var player = (GameObject*)Plugin.Instance.ObjectTable.LocalPlayer.Address;
             sourcePos = new Vector3(player->Position.X, player->Position.Y + 2, player->Position.Z);
         }
 
