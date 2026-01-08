@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using CSFramework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
 
 namespace BetterTargetingSystem.Keybinds;
 
@@ -54,16 +53,15 @@ public unsafe class Keybind
         if (this.Key == null)
             return false;
 
-        if (this.ControlModifier != Plugin.KeyState[(int) VirtualKey.CONTROL]
-            || this.ShiftModifier != Plugin.KeyState[(int) VirtualKey.SHIFT]
-            || this.AltModifier != Plugin.KeyState[(int) VirtualKey.MENU])
+        // Use Plugin.Instance to access the KeyState service
+        if (this.ControlModifier != Plugin.Instance.KeyState[(int) VirtualKey.CONTROL]
+            || this.ShiftModifier != Plugin.Instance.KeyState[(int) VirtualKey.SHIFT]
+            || this.AltModifier != Plugin.Instance.KeyState[(int) VirtualKey.MENU])
             return false;
 
-        MouseKey? mouseKey;
-        if ((mouseKey = this.GetMouseKey()) != null)
-            return (((byte*)CSFramework.Instance()->GetUIModule()->GetUIInputData())[0x4D8] & (int)mouseKey) != 0;
-        else
-            return Plugin.KeyState[(int)this.Key];
+        // We use standard Dalamud KeyState for everything now. 
+        // The old code used a memory offset (0x4D8) for mouse keys that is outdated and dangerous.
+        return Plugin.Instance.KeyState[(int)this.Key];
     }
 
     public override string ToString()
@@ -176,9 +174,7 @@ public unsafe class Keybind
 
     public enum MouseKey
     {
-        // LBUTTON = 1,
         MBUTTON = 2,
-        // RBUTTON = 4,
         XBUTTON1 = 8,
         XBUTTON2 = 16
     }

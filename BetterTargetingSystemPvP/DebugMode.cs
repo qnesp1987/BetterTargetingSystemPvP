@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using DalamudGameObject = Dalamud.Game.ClientState.Objects.Types.IGameObject;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
+using CameraManager = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CameraManager;
 
 namespace BetterTargetingSystem;
 
@@ -19,10 +20,11 @@ public unsafe class DebugMode
 
     public void DrawCones()
     {
-        if (Plugin.Client.LocalPlayer == null)
+        // Use ClientState instead of Client
+        if (Plugin.ClientState.LocalPlayer == null)
             return;
 
-        var pos = Plugin.Client.LocalPlayer.Position;
+        var pos = Plugin.ClientState.LocalPlayer.Position;
 
         Plugin.GameGui.WorldToScreen(new Vector3(
             pos.X,
@@ -61,11 +63,11 @@ public unsafe class DebugMode
 
     public void DrawCircle()
     {
-        if (Plugin.Client.LocalPlayer == null)
+        if (Plugin.ClientState.LocalPlayer == null)
             return;
 
         var distance = Plugin.Configuration.CloseTargetsCircleRadius;
-        var pos = Plugin.Client.LocalPlayer.Position;
+        var pos = Plugin.ClientState.LocalPlayer.Position;
         for (var degrees = 0; degrees <= 360; degrees += 10)
         {
             float rad = (float)(degrees * Math.PI / 180);
@@ -84,7 +86,7 @@ public unsafe class DebugMode
 
     public void Draw()
     {
-        if (Plugin.Client.LocalPlayer == null)
+        if (Plugin.ClientState.LocalPlayer == null)
             return;
 
         if (Plugin.Condition[ConditionFlag.InCombat] || Plugin.Condition[ConditionFlag.InFlight]
@@ -121,9 +123,15 @@ public unsafe class DebugMode
     private void HighlightTarget(DalamudGameObject target, Vector4 colour)
     {
         Plugin.GameGui.WorldToScreen(target.Position, out var screenPos);
-        var camera = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CameraManager.Instance()->CurrentCamera->Object;
-        var distance = Utils.DistanceBetweenObjects(camera.Position, target.Position, 0);
-        var size = (int)Math.Round(100 * (25 / distance)) * Math.Max(target.HitboxRadius, ((GameObject*)target.Address)->Height);
+        
+        // Updated Camera access for ClientStructs
+        var camera = CameraManager.Instance()->GetActiveCamera();
+        var distance = Utils.DistanceBetweenObjects(camera->Object.Position, target.Position, 0);
+        
+        var go = (GameObject*)target.Address;
+        // Use IGameObject.HitboxRadius and Struct Height
+        var size = (int)Math.Round(100 * (25 / distance)) * Math.Max(target.HitboxRadius, go->Height);
+        
         ImGui.GetWindowDrawList().AddRect(
             new Vector2(screenPos.X - (size / 2), screenPos.Y),
             new Vector2(screenPos.X + (size / 2), screenPos.Y - size),

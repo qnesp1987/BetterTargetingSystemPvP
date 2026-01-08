@@ -42,6 +42,8 @@ namespace BetterTargetingSystem.Windows
                     KeybindsConfig();
                     ImGui.EndTabItem();
                 }
+                // The original author commented this out, I'm leaving it commented
+                // but keeping the code below in case you want to enable it later.
                 //if (ImGui.BeginTabItem("Settings-Debug"))
                 //{
                 //    SettingsConfig();
@@ -69,7 +71,6 @@ namespace BetterTargetingSystem.Windows
                 ? this.CurrentKeys.ToString()
                 : (this.Configuration.BestAOETargetKeybind.Key != null ? this.Configuration.BestAOETargetKeybind.ToString() : "None");
 
-            //ImGui.Text("Keybinds Configuration:\n\n");
             ImGui.PushItemWidth(170);
             ImGui.Text("\n[Cycle Targets]");
             ImGui.InputText($"##ttk_Keybind", ref tabTargetKeybind, 200, ImGuiInputTextFlags.ReadOnly);
@@ -77,7 +78,6 @@ namespace BetterTargetingSystem.Windows
             {
                 ImGui.SetTooltip("Use Backspace to remove keybind");
                 this.ModifyingKeybindTTK = true;
-                // Prevent trying to set Alt-Tab as a keybind
                 if (this.CurrentKeys.Key != null && (this.CurrentKeys.Key != VirtualKey.TAB || this.CurrentKeys.AltModifier == false))
                 {
                     this.Configuration.TabTargetKeybind = this.CurrentKeys;
@@ -104,7 +104,6 @@ namespace BetterTargetingSystem.Windows
             {
                 ImGui.SetTooltip("Use Backspace to remove keybind");
                 this.ModifyingKeybindCTK = true;
-                // Prevent trying to set Alt-Tab as a keybind
                 if (this.CurrentKeys.Key != null && (this.CurrentKeys.Key != VirtualKey.TAB || this.CurrentKeys.AltModifier == false))
                 {
                     this.Configuration.ClosestTargetKeybind = this.CurrentKeys;
@@ -131,7 +130,6 @@ namespace BetterTargetingSystem.Windows
             {
                 ImGui.SetTooltip("Use Backspace to remove keybind");
                 this.ModifyingKeybindLHTK = true;
-                // Prevent trying to set Alt-Tab as a keybind
                 if (this.CurrentKeys.Key != null && (this.CurrentKeys.Key != VirtualKey.TAB || this.CurrentKeys.AltModifier == false))
                 {
                     this.Configuration.LowestHealthTargetKeybind = this.CurrentKeys;
@@ -158,7 +156,6 @@ namespace BetterTargetingSystem.Windows
             {
                 ImGui.SetTooltip("Use Backspace to remove keybind");
                 this.ModifyingKeybindBAOETK = true;
-                // Prevent trying to set Alt-Tab as a keybind
                 if (this.CurrentKeys.Key != null && (this.CurrentKeys.Key != VirtualKey.TAB || this.CurrentKeys.AltModifier == false))
                 {
                     this.Configuration.BestAOETargetKeybind = this.CurrentKeys;
@@ -176,6 +173,24 @@ namespace BetterTargetingSystem.Windows
             {
                 this.ModifyingKeybindBAOETK = false;
             }
+
+            ImGui.NewLine();
+            if (ImGui.Button("Reset settings to defaults", new Vector2(170,25)))
+            {
+                Configuration.Cone1Angle = 140;
+                Configuration.Cone1Distance = 5;
+                Configuration.Cone2Enabled = true;
+                Configuration.Cone2Angle = 90;
+                Configuration.Cone2Distance = 15;
+                Configuration.Cone3Enabled = true;
+                Configuration.Cone3Angle = 50;
+                Configuration.Cone3Distance = 40;
+                Configuration.CloseTargetsCircleEnabled = true;
+                Configuration.CloseTargetsCircleRadius = 5;
+                Configuration.Save();
+            }
+
+            Plugin.DebugMode.Draw();
         }
 
         private void SettingsConfig()

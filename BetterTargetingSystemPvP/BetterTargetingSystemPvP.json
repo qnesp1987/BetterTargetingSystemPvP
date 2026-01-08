@@ -1,15 +1,17 @@
 {
-    "Author": "Kirbo",
-    "Name": "Better Targeting System",
-    "Punchline": "A more intelligent targeting system for the game.",
-    "Description": "A more intelligent targeting system for the game which also includes new keybinds.",
-    "InternalName": "BetterTargetingSystemPvP",
-    "ApplicableVersion": "any",
-    "RepoUrl": "https://github.com/BrakusTapus/BetterTargetingSystemPvP",
-    "IconUrl": "https://github.com/BrakusTapus/BetterTargetingSystemPvP/raw/main/BetterTargetingSystem/images/icon.png",
-    "Tags": [
-        "Tab",
-        "Target",
-        "Targeting"
-    ]
+  "Author": "PupaOfSand",
+  "Name": "Better Targeting System",
+  "Punchline": "A more intelligent targeting system for the game.",
+  "Description": "Better Targeting System PvP Sponosk",
+  "InternalName": "BetterTargetingSystemPvP",
+  "AssemblyVersion": "1.0.0.7",
+  "ApplicableVersion": "any",
+  "RepoUrl": "https://github.com/qnesp1987/BetterTargetingSystemPvP",
+  "IconUrl": "https://github.com/qnesp1987/BetterTargetingSystemPvP/raw/main/BetterTargetingSystemPvP/images/icon.png",
+  "Tags": [
+    "Tab",
+    "Target",
+    "Targeting",
+    "PvP"
+  ]
 }
