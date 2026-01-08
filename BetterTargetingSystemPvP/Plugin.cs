@@ -2,17 +2,14 @@ using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
-using Dalamud.IoC;
 using Dalamud.Plugin;
-using Dalamud.Utility.Signatures;
+using Dalamud.Plugin.Services; // NEW: This is where services live now
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using BetterTargetingSystem.Windows;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Plugin.Services;
 using DalamudCharacter = Dalamud.Game.ClientState.Objects.Types.ICharacter;
 using DalamudGameObject = Dalamud.Game.ClientState.Objects.Types.IGameObject;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
@@ -26,62 +23,80 @@ public sealed unsafe class Plugin : IDalamudPlugin
     public string CommandConfig => "/bts";
     public string CommandHelp => "/btshelp";
 
+    // Singleton instance so other files can access services easily
+    public static Plugin Instance { get; private set; } = null!;
+
+    // Services (No more [PluginService] static fields!)
+    public IDalamudPluginInterface PluginInterface { get; init; }
+    public ICommandManager CommandManager { get; init; }
+    public IFramework Framework { get; init; }
+    public IPluginLog PluginLog { get; init; }
+    public IClientState ClientState { get; init; }
+    public IObjectTable ObjectTable { get; init; }
+    public ITargetManager TargetManager { get; init; }
+    public IGameGui GameGui { get; init; }
+    public IGameInteropProvider GameInteropProvider { get; init; }
+    public IKeyState KeyState { get; init; }
+    public ICondition Condition { get; init; }
+
+    public Configuration Configuration { get; init; }
+    public WindowSystem WindowSystem = new("BetterTargetingSystem");
+
+    private ConfigWindow ConfigWindow { get; init; }
+    private HelpWindow HelpWindow { get; init; }
+
+    // Logic fields
     internal IEnumerable<uint> LastConeTargets { get; private set; } = Enumerable.Empty<uint>();
     internal List<uint> CyclingTargets { get; private set; } = new List<uint>();
     internal DebugMode DebugMode { get; private set; }
 
-    private IDalamudPluginInterface PluginInterface { get; init; }
-    private ICommandManager CommandManager { get; init; }
-    private IFramework Framework { get; set; }
-    private IPluginLog PluginLog { get; init; }
-    public Configuration Configuration { get; init; }
-
-    [PluginService] internal static IClientState Client { get; set; } = null!;
-    [PluginService] private IObjectTable ObjectTable { get; set; } = null!;
-    [PluginService] private ITargetManager TargetManager { get; set; } = null!;
-    [PluginService] internal static IGameGui GameGui { get; set; } = null!;
-    [PluginService] private static IGameInteropProvider GameInteropProvider { get; set; } = null!;
-    [PluginService] internal static IKeyState KeyState { get; set; } = null!;
-    [PluginService] internal ICondition Condition { get; private set; }
-
-    private ConfigWindow ConfigWindow { get; init; }
-    private HelpWindow HelpWindow { get; init; }
-    private WindowSystem WindowSystem = new("BetterTargetingSystem");
-
-    // Shamelessly stolen, not sure what that game function exactly does but it works
-    [Signature("48 89 5C 24 ?? 57 48 83 EC 20 48 8B DA 8B F9 E8 ?? ?? ?? ?? 4C 8B C3")]
-    internal static CanAttackDelegate? CanAttackFunction = null!;
-    internal delegate nint CanAttackDelegate(nint a1, nint objectAddress);
-
     public Plugin(
         IDalamudPluginInterface pluginInterface,
         ICommandManager commandManager,
+        IFramework framework,
         IPluginLog pluginLog,
-        IFramework framework)
+        IClientState clientState,
+        IObjectTable objectTable,
+        ITargetManager targetManager,
+        IGameGui gameGui,
+        IGameInteropProvider gameInteropProvider,
+        IKeyState keyState,
+        ICondition condition)
     {
-        GameInteropProvider.InitializeFromAttributes(this);
+        Instance = this;
 
+        // Assign services
         this.PluginInterface = pluginInterface;
         this.CommandManager = commandManager;
+        this.Framework = framework;
         this.PluginLog = pluginLog;
+        this.ClientState = clientState;
+        this.ObjectTable = objectTable;
+        this.TargetManager = targetManager;
+        this.GameGui = gameGui;
+        this.GameInteropProvider = gameInteropProvider;
+        this.KeyState = keyState;
+        this.Condition = condition;
 
         this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         this.Configuration.Initialize(this.PluginInterface);
 
-        Framework = framework;
-        Framework.Update += Update;
-        Client.TerritoryChanged += ClearLists;
-
+        // Windows
         ConfigWindow = new ConfigWindow(this);
         WindowSystem.AddWindow(ConfigWindow);
         HelpWindow = new HelpWindow(this);
         WindowSystem.AddWindow(HelpWindow);
 
         this.DebugMode = new DebugMode(this);
+
+        // Events
         this.PluginInterface.UiBuilder.Draw += DrawUI;
         this.PluginInterface.UiBuilder.OpenMainUi += DrawHelpUI;
         this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+        this.Framework.Update += Update;
+        this.ClientState.TerritoryChanged += ClearLists;
 
+        // Commands
         this.CommandManager.AddHandler(CommandConfig, new CommandInfo(ShowConfigWindow)
         { HelpMessage = "Open the configuration window." });
         this.CommandManager.AddHandler(CommandHelp, new CommandInfo(ShowHelpWindow)
@@ -90,10 +105,12 @@ public sealed unsafe class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
-        Framework.Update -= Update;
-        Client.TerritoryChanged -= ClearLists;
         this.CommandManager.RemoveHandler(CommandConfig);
         this.CommandManager.RemoveHandler(CommandHelp);
+        
+        this.Framework.Update -= Update;
+        this.ClientState.TerritoryChanged -= ClearLists;
+
         this.WindowSystem.RemoveAllWindows();
         ConfigWindow.Dispose();
         HelpWindow.Dispose();
@@ -108,21 +125,18 @@ public sealed unsafe class Plugin : IDalamudPlugin
 
     public void ClearLists(ushort territoryType)
     {
-        // Attempt to fix a very rare bug I can't reproduce
         this.LastConeTargets = new List<uint>();
         this.CyclingTargets = new List<uint>();
     }
 
     public void Update(IFramework framework)
     {
-        if (!Client.IsLoggedIn || Client.LocalPlayer == null)
+        if (!ClientState.IsLoggedIn || ClientState.LocalPlayer == null)
             return;
 
-        // Disable in GPose
-        if (Client.IsGPosing)
+        if (ClientState.IsGPosing)
             return;
 
-        // Disable if keyboard is being used to type text
         if (Utils.IsTextInputActive || ImGuiNET.ImGui.GetIO().WantCaptureKeyboard)
             return;
 
@@ -167,20 +181,19 @@ public sealed unsafe class Plugin : IDalamudPlugin
 
     private void TargetClosest(bool lowestHealth = false)
     {
-        if (Client.LocalPlayer == null)
+        if (ClientState.LocalPlayer == null)
             return;
 
         var (Targets, CloseTargets, EnemyListTargets, OnScreenTargets) = GetTargets();
 
-        // All objects in Targets and CloseTargets are in OnScreenTargets so it's not necessary to test them
         if (EnemyListTargets.Count == 0 && OnScreenTargets.Count == 0)
             return;
 
         var _targets = OnScreenTargets.Count > 0 ? OnScreenTargets : EnemyListTargets;
 
         var _target = lowestHealth
-            ? _targets.OrderBy(o => (o as DalamudCharacter)?.CurrentHp).ThenBy(o => Utils.DistanceBetweenObjects(Client.LocalPlayer, o)).First()
-            : _targets.OrderBy(o => Utils.DistanceBetweenObjects(Client.LocalPlayer, o)).First();
+            ? _targets.OrderBy(o => (o as DalamudCharacter)?.CurrentHp).ThenBy(o => Utils.DistanceBetweenObjects(ClientState.LocalPlayer, o)).First()
+            : _targets.OrderBy(o => Utils.DistanceBetweenObjects(ClientState.LocalPlayer, o)).First();
 
         SetTarget(_target);
     }
@@ -191,9 +204,10 @@ public sealed unsafe class Plugin : IDalamudPlugin
         public int inRange = 0;
         public AOETarget(DalamudGameObject obj) => this.obj = obj;
     }
+
     private void TargetBestAOE()
     {
-        if (Client.LocalPlayer == null)
+        if (ClientState.LocalPlayer == null)
             return;
 
         var (Targets, CloseTargets, EnemyListTargets, OnScreenTargets) = GetTargets();
@@ -238,12 +252,11 @@ public sealed unsafe class Plugin : IDalamudPlugin
 
     private void CycleTargets()
     {
-        if (Client.LocalPlayer == null)
+        if (ClientState.LocalPlayer == null)
             return;
 
         var (Targets, CloseTargets, EnemyListTargets, OnScreenTargets) = GetTargets();
 
-        // All objects in Targets and CloseTargets are in OnScreenTargets so it's not necessary to test them
         if (EnemyListTargets.Count == 0 && OnScreenTargets.Count == 0)
             return;
 
@@ -254,7 +267,7 @@ public sealed unsafe class Plugin : IDalamudPlugin
         // Targets in the frontal cone
         if (Targets.Count > 0)
         {
-            Targets = Targets.OrderBy(o => Utils.DistanceBetweenObjects(Client.LocalPlayer, o)).ToList();
+            Targets = Targets.OrderBy(o => Utils.DistanceBetweenObjects(ClientState.LocalPlayer, o)).ToList();
 
             var TargetsObjectIds = Targets.Select(o => o.EntityId);
             // Same cone targets as last cycle
@@ -262,7 +275,7 @@ public sealed unsafe class Plugin : IDalamudPlugin
             {
                 // Add the close targets to the list of potential targets
                 var _potentialTargets = Targets.UnionBy(CloseTargets, o => o.EntityId).ToList();
-                var _potentialTargetsObjectIds = _potentialTargets.Select(o => o.EntityId );
+                var _potentialTargetsObjectIds = _potentialTargets.Select(o => o.EntityId);
 
                 // New enemies to be added
                 if (_potentialTargetsObjectIds.Any(o => this.CyclingTargets.Contains(o) == false))
@@ -298,7 +311,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
             if (_potentialTargetsObjectIds.Any(o => this.CyclingTargets.Contains(o) == false))
                 this.CyclingTargets = this.CyclingTargets.Union(_potentialTargetsObjectIds).ToList();
 
-            // We simply select the next target
             this.CyclingTargets = this.CyclingTargets.Intersect(_potentialTargetsObjectIds).ToList();
             var index = this.CyclingTargets.FindIndex(o => o == _targetObjectId);
             if (index == this.CyclingTargets.Count - 1) index = -1;
@@ -314,7 +326,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
             if (_potentialTargetsObjectIds.Any(o => this.CyclingTargets.Contains(o) == false))
                 this.CyclingTargets = this.CyclingTargets.Union(_potentialTargetsObjectIds).ToList();
 
-            // We simply select the next target
             this.CyclingTargets = this.CyclingTargets.Intersect(_potentialTargetsObjectIds).ToList();
             var index = this.CyclingTargets.FindIndex(o => o == _targetObjectId);
             if (index == this.CyclingTargets.Count - 1) index = -1;
@@ -325,13 +336,12 @@ public sealed unsafe class Plugin : IDalamudPlugin
 
         if (OnScreenTargets.Count > 0)
         {
-            OnScreenTargets = OnScreenTargets.OrderBy(o => Utils.DistanceBetweenObjects(Client.LocalPlayer, o)).ToList();
+            OnScreenTargets = OnScreenTargets.OrderBy(o => Utils.DistanceBetweenObjects(ClientState.LocalPlayer, o)).ToList();
             var _potentialTargetsObjectIds = OnScreenTargets.Select(o => o.EntityId);
 
             if (_potentialTargetsObjectIds.Any(o => this.CyclingTargets.Contains(o) == false))
                 this.CyclingTargets = this.CyclingTargets.Union(_potentialTargetsObjectIds).ToList();
 
-            // We simply select the next target
             this.CyclingTargets = this.CyclingTargets.Intersect(_potentialTargetsObjectIds).ToList();
             var index = this.CyclingTargets.FindIndex(o => o == _targetObjectId);
             if (index == this.CyclingTargets.Count - 1) index = -1;
@@ -342,30 +352,24 @@ public sealed unsafe class Plugin : IDalamudPlugin
     public record ObjectsList(List<DalamudGameObject> Targets, List<DalamudGameObject> CloseTargets, List<DalamudGameObject> TargetsEnemy, List<DalamudGameObject> OnScreenTargets);
     internal ObjectsList GetTargets()
     {
-        /* Always return 4 lists.
-         * The enemies in a cone in front of the player
-         * The enemies in a close radius around the player
-         * The enemies in the Enemy List Addon
-         * All the targets on screen
-         */
         var TargetsList = new List<DalamudGameObject>();
         var CloseTargetsList = new List<DalamudGameObject>();
         var TargetsEnemyList = new List<DalamudGameObject>();
         var OnScreenTargetsList = new List<DalamudGameObject>();
 
-        var Player = Client.LocalPlayer != null ? (GameObject*)Client.LocalPlayer.Address : null;
+        var Player = ClientState.LocalPlayer != null ? (GameObject*)ClientState.LocalPlayer.Address : null;
         if (Player == null)
             return new ObjectsList(TargetsList, CloseTargetsList, TargetsEnemyList, OnScreenTargetsList);
 
-        // There might be a way to store this and just update the values if they actually change
         var device = Device.Instance();
         float deviceWidth = device->Width;
         float deviceHeight = device->Height;
 
+        // ENABLED PVP TARGETING: This includes Players now
         var PotentialTargets = ObjectTable.Where(
             o => (ObjectKind.BattleNpc.Equals(o.ObjectKind)
                 || ObjectKind.Player.Equals(o.ObjectKind))
-            && o != Client.LocalPlayer
+            && o != ClientState.LocalPlayer
             && Utils.CanAttack(o)
         );
 
@@ -373,7 +377,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
 
         foreach (var obj in PotentialTargets)
         {
-            // In the enemy list addon, adding it to the Enemy list
             if (EnemyList.Contains(obj.EntityId))
                 TargetsEnemyList.Add(obj);
 
@@ -382,24 +385,14 @@ public sealed unsafe class Plugin : IDalamudPlugin
 
             if (o->GetIsTargetable() == false) continue;
 
-            // If the object is part of another party's treasure hunt/leve, we ignore it
             if ((o->EventId.ContentId == EventHandlerType.TreasureHuntDirector || o->EventId.ContentId == EventHandlerType.BattleLeveDirector)
                 && o->EventId.Id != Player->EventId.Id)
                 continue;
 
-            var distance = Utils.DistanceBetweenObjects(Client.LocalPlayer!, obj);
+            var distance = Utils.DistanceBetweenObjects(ClientState.LocalPlayer!, obj);
 
-            // This is a bit less than the max distance to target something the vanilla way
             if (distance > 49) continue;
 
-            /*
-             * Check if object is visible on screen or not.
-             * Using both WorldToScreenPoint and WorldToScreen because
-             *  - the former is more accurate for actual X,Y position on screen
-             *  - the latter returns whether or not the object is "in front" of the camera
-             * This isn't exactly how I'd like to do it but since I couldn't find how to get
-             * the "bounding box" of a game object or the dimensions of its model, this will have to do.
-             */
             var screenPos = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Camera.WorldToScreenPoint(o->Position);
             if (screenPos.X < 0
                 || screenPos.X > deviceWidth
@@ -407,17 +400,13 @@ public sealed unsafe class Plugin : IDalamudPlugin
                 || screenPos.Y > deviceHeight) continue;
             if (GameGui.WorldToScreen(o->Position, out _) == false) continue;
 
-            // Check actual line of sight from camera to object (blocked by walls, etc)
             if (Utils.IsInLineOfSight(o, true) == false) continue;
 
-            // On screen and in light of sight of the camera, adding it to the On Screen list
             OnScreenTargetsList.Add(obj);
 
-            // Close to the player, adding it to the Close targets list
             if (Configuration.CloseTargetsCircleEnabled && distance < Configuration.CloseTargetsCircleRadius)
                 CloseTargetsList.Add(obj);
 
-            // Further than the bigger cone, don't care about targeting it
             if (Configuration.Cone3Enabled)
             {
                 if (distance > Configuration.Cone3Distance)
@@ -431,7 +420,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
             else if (distance > Configuration.Cone1Distance)
                 continue;
 
-            // Default cone angle for very close targets, getting wider the closer the target is
             var angle = Configuration.Cone1Angle;
             if (Configuration.Cone3Enabled)
             {
@@ -450,7 +438,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
 
             if (Utils.IsInFrontOfCamera(obj, angle) == false) continue;
 
-            // In front of the player, adding it to the default list
             TargetsList.Add(obj);
         }
 
