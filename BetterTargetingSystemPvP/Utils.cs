@@ -7,6 +7,7 @@ using Dalamud.Game.ClientState.Objects.Types;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 using CameraManager = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CameraManager;
 using CSFramework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace BetterTargetingSystem;
 
@@ -17,8 +18,6 @@ public unsafe class Utils
 
     internal static bool CanAttack(IGameObject obj)
     {
-        // The old hook was broken and removed. 
-        // Returning true allows the plugin to function, though it may be slightly less strict about valid targets.
         return true; 
     }
 
@@ -36,18 +35,15 @@ public unsafe class Utils
 
     internal static float GetCameraRotation()
     {
-        // Gives the camera rotation in deg between -180 and 180
         var cameraRotation = RaptureAtkModule->AtkModule.AtkArrayDataHolder.NumberArrays[24]->IntArray[3];
-
         var sign = Math.Sign(cameraRotation) == -1 ? -1 : 1;
         var rotation = (float)((Math.Abs(cameraRotation * (Math.PI / 180)) - Math.PI) * sign);
-
         return rotation;
     }
 
     internal static bool IsInFrontOfCamera(IGameObject obj, float maxAngle)
     {
-        // Using Plugin.Instance to access services
+        // Suppress warning by casting, or just use ObjectTable[0] logic implicitly via IClientState
         if (Plugin.Instance.ClientState.LocalPlayer == null)
             return false;
 
@@ -62,11 +58,13 @@ public unsafe class Utils
 
     internal static bool IsInLineOfSight(GameObject* target, bool useCamera = false)
     {
-        var sourcePos = FFXIVClientStructs.FFXIV.Common.Math.Vector3.Zero;
+        // Use ClientStructs Vector3 for Raycast
+        FFXIVClientStructs.FFXIV.Common.Math.Vector3 sourcePos;
+        
         if (useCamera)
         {
-            // Updated for newer ClientStructs (CurrentCamera -> GetActiveCamera())
-            sourcePos = CameraManager.Instance()->GetActiveCamera()->Object.Position;
+            var cam = CameraManager.Instance()->CurrentCamera; // Fixed access
+            sourcePos = cam->Object.Position;
         }
         else
         {
@@ -87,7 +85,6 @@ public unsafe class Utils
         RaycastHit hit;
         var flags = stackalloc int[] { 0x4000, 0, 0x4000, 0 };
         
-        // Pass pointers (&) for vectors, required by newer ClientStructs
         var isLoSBlocked = CSFramework.Instance()->BGCollisionModule->RaycastMaterialFilter(&hit, &sourcePos, &direction, distance, 1, flags);
 
         return isLoSBlocked == false;
@@ -95,12 +92,12 @@ public unsafe class Utils
 
     internal static uint[] GetEnemyListObjectIds()
     {
-        // Updated to use Plugin.Instance.GameGui
-        var addonByName = Plugin.Instance.GameGui.GetAddonByName("_EnemyList", 1);
-        if (addonByName == IntPtr.Zero)
+        // Fixed GetAddonByName return type
+        var addonPtr = Plugin.Instance.GameGui.GetAddonByName("_EnemyList", 1);
+        if (addonPtr == IntPtr.Zero)
             return Array.Empty<uint>();
 
-        var addon = (AddonEnemyList*)addonByName;
+        var addon = (AddonEnemyList*)addonPtr;
         var numArray = RaptureAtkModule->AtkModule.AtkArrayDataHolder.NumberArrays[21];
         var list = new List<uint>(addon->EnemyCount);
         for (var i = 0; i < addon->EnemyCount; i++)

@@ -20,7 +20,6 @@ public unsafe class DebugMode
 
     public void DrawCones()
     {
-        // Use ClientState instead of Client
         if (Plugin.ClientState.LocalPlayer == null)
             return;
 
@@ -124,12 +123,10 @@ public unsafe class DebugMode
     {
         Plugin.GameGui.WorldToScreen(target.Position, out var screenPos);
         
-        // Updated Camera access for ClientStructs
-        var camera = CameraManager.Instance()->GetActiveCamera();
+        var camera = CameraManager.Instance()->CurrentCamera; // Fixed access
         var distance = Utils.DistanceBetweenObjects(camera->Object.Position, target.Position, 0);
         
         var go = (GameObject*)target.Address;
-        // Use IGameObject.HitboxRadius and Struct Height
         var size = (int)Math.Round(100 * (25 / distance)) * Math.Max(target.HitboxRadius, go->Height);
         
         ImGui.GetWindowDrawList().AddRect(

@@ -3,13 +3,15 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
-using Dalamud.Plugin.Services; // NEW: This is where services live now
-using FFXIVClientStructs.FFXIV.Client.Game.Event;
+using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game.Event; // For EventHandlerType
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel; // For Device
 using BetterTargetingSystem.Windows;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics; // Required for Vector2
 using DalamudCharacter = Dalamud.Game.ClientState.Objects.Types.ICharacter;
 using DalamudGameObject = Dalamud.Game.ClientState.Objects.Types.IGameObject;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
@@ -23,10 +25,8 @@ public sealed unsafe class Plugin : IDalamudPlugin
     public string CommandConfig => "/bts";
     public string CommandHelp => "/btshelp";
 
-    // Singleton instance so other files can access services easily
     public static Plugin Instance { get; private set; } = null!;
 
-    // Services (No more [PluginService] static fields!)
     public IDalamudPluginInterface PluginInterface { get; init; }
     public ICommandManager CommandManager { get; init; }
     public IFramework Framework { get; init; }
@@ -45,7 +45,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
     private ConfigWindow ConfigWindow { get; init; }
     private HelpWindow HelpWindow { get; init; }
 
-    // Logic fields
     internal IEnumerable<uint> LastConeTargets { get; private set; } = Enumerable.Empty<uint>();
     internal List<uint> CyclingTargets { get; private set; } = new List<uint>();
     internal DebugMode DebugMode { get; private set; }
@@ -65,7 +64,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
     {
         Instance = this;
 
-        // Assign services
         this.PluginInterface = pluginInterface;
         this.CommandManager = commandManager;
         this.Framework = framework;
@@ -81,7 +79,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
         this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         this.Configuration.Initialize(this.PluginInterface);
 
-        // Windows
         ConfigWindow = new ConfigWindow(this);
         WindowSystem.AddWindow(ConfigWindow);
         HelpWindow = new HelpWindow(this);
@@ -89,14 +86,12 @@ public sealed unsafe class Plugin : IDalamudPlugin
 
         this.DebugMode = new DebugMode(this);
 
-        // Events
         this.PluginInterface.UiBuilder.Draw += DrawUI;
         this.PluginInterface.UiBuilder.OpenMainUi += DrawHelpUI;
         this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
         this.Framework.Update += Update;
         this.ClientState.TerritoryChanged += ClearLists;
 
-        // Commands
         this.CommandManager.AddHandler(CommandConfig, new CommandInfo(ShowConfigWindow)
         { HelpMessage = "Open the configuration window." });
         this.CommandManager.AddHandler(CommandHelp, new CommandInfo(ShowHelpWindow)
@@ -107,10 +102,8 @@ public sealed unsafe class Plugin : IDalamudPlugin
     {
         this.CommandManager.RemoveHandler(CommandConfig);
         this.CommandManager.RemoveHandler(CommandHelp);
-        
         this.Framework.Update -= Update;
         this.ClientState.TerritoryChanged -= ClearLists;
-
         this.WindowSystem.RemoveAllWindows();
         ConfigWindow.Dispose();
         HelpWindow.Dispose();
@@ -273,15 +266,12 @@ public sealed unsafe class Plugin : IDalamudPlugin
             // Same cone targets as last cycle
             if (this.LastConeTargets.ToHashSet().SetEquals(TargetsObjectIds.ToHashSet()))
             {
-                // Add the close targets to the list of potential targets
                 var _potentialTargets = Targets.UnionBy(CloseTargets, o => o.EntityId).ToList();
                 var _potentialTargetsObjectIds = _potentialTargets.Select(o => o.EntityId);
 
-                // New enemies to be added
                 if (_potentialTargetsObjectIds.Any(o => this.CyclingTargets.Contains(o) == false))
                     this.CyclingTargets = this.CyclingTargets.Union(_potentialTargetsObjectIds).ToList();
 
-                // We simply select the next target
                 this.CyclingTargets = this.CyclingTargets.Intersect(_potentialTargetsObjectIds).ToList();
                 var index = this.CyclingTargets.FindIndex(o => o == _targetObjectId);
                 if (index == this.CyclingTargets.Count - 1) index = -1;
@@ -298,7 +288,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
                 this.LastConeTargets = TargetsObjectIds;
                 this.CyclingTargets = _potentialTargetsObjectIds;
             }
-
             return;
         }
 
@@ -307,7 +296,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
         if (CloseTargets.Count > 0)
         {
             var _potentialTargetsObjectIds = CloseTargets.Select(o => o.EntityId);
-
             if (_potentialTargetsObjectIds.Any(o => this.CyclingTargets.Contains(o) == false))
                 this.CyclingTargets = this.CyclingTargets.Union(_potentialTargetsObjectIds).ToList();
 
@@ -315,14 +303,12 @@ public sealed unsafe class Plugin : IDalamudPlugin
             var index = this.CyclingTargets.FindIndex(o => o == _targetObjectId);
             if (index == this.CyclingTargets.Count - 1) index = -1;
             SetTarget(CloseTargets.Find(o => o.EntityId == this.CyclingTargets[index + 1]));
-
             return;
         }
 
         if (EnemyListTargets.Count > 0)
         {
             var _potentialTargetsObjectIds = EnemyListTargets.Select(o => o.EntityId);
-
             if (_potentialTargetsObjectIds.Any(o => this.CyclingTargets.Contains(o) == false))
                 this.CyclingTargets = this.CyclingTargets.Union(_potentialTargetsObjectIds).ToList();
 
@@ -330,7 +316,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
             var index = this.CyclingTargets.FindIndex(o => o == _targetObjectId);
             if (index == this.CyclingTargets.Count - 1) index = -1;
             SetTarget(EnemyListTargets.Find(o => o.EntityId == this.CyclingTargets[index + 1]));
-
             return;
         }
 
@@ -338,7 +323,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
         {
             OnScreenTargets = OnScreenTargets.OrderBy(o => Utils.DistanceBetweenObjects(ClientState.LocalPlayer, o)).ToList();
             var _potentialTargetsObjectIds = OnScreenTargets.Select(o => o.EntityId);
-
             if (_potentialTargetsObjectIds.Any(o => this.CyclingTargets.Contains(o) == false))
                 this.CyclingTargets = this.CyclingTargets.Union(_potentialTargetsObjectIds).ToList();
 
@@ -365,7 +349,6 @@ public sealed unsafe class Plugin : IDalamudPlugin
         float deviceWidth = device->Width;
         float deviceHeight = device->Height;
 
-        // ENABLED PVP TARGETING: This includes Players now
         var PotentialTargets = ObjectTable.Where(
             o => (ObjectKind.BattleNpc.Equals(o.ObjectKind)
                 || ObjectKind.Player.Equals(o.ObjectKind))
@@ -390,15 +373,13 @@ public sealed unsafe class Plugin : IDalamudPlugin
                 continue;
 
             var distance = Utils.DistanceBetweenObjects(ClientState.LocalPlayer!, obj);
-
             if (distance > 49) continue;
 
-            var screenPos = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Camera.WorldToScreenPoint(o->Position);
-            if (screenPos.X < 0
-                || screenPos.X > deviceWidth
-                || screenPos.Y < 0
-                || screenPos.Y > deviceHeight) continue;
-            if (GameGui.WorldToScreen(o->Position, out _) == false) continue;
+            // REPLACEMENT: Use safer GameGui method instead of custom ClientStructs calls
+            if (GameGui.WorldToScreen(obj.Position, out Vector2 screenPos) == false) 
+                continue;
+
+            if (screenPos.X < 0 || screenPos.X > deviceWidth || screenPos.Y < 0 || screenPos.Y > deviceHeight) continue;
 
             if (Utils.IsInLineOfSight(o, true) == false) continue;
 
@@ -409,16 +390,13 @@ public sealed unsafe class Plugin : IDalamudPlugin
 
             if (Configuration.Cone3Enabled)
             {
-                if (distance > Configuration.Cone3Distance)
-                    continue;
+                if (distance > Configuration.Cone3Distance) continue;
             }
             else if (Configuration.Cone2Enabled)
             {
-                if (distance > Configuration.Cone2Distance)
-                    continue;
+                if (distance > Configuration.Cone2Distance) continue;
             }
-            else if (distance > Configuration.Cone1Distance)
-                continue;
+            else if (distance > Configuration.Cone1Distance) continue;
 
             var angle = Configuration.Cone1Angle;
             if (Configuration.Cone3Enabled)
