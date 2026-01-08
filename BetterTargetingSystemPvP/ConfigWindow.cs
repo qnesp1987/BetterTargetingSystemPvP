@@ -1,6 +1,6 @@
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Windowing;
-using ImGuiNET; // Back to standard ImGuiNET
+using ImGuiNET;
 using System;
 using System.Numerics;
 using BetterTargetingSystem.Keybinds;
@@ -20,11 +20,12 @@ namespace BetterTargetingSystem.Windows
 
         public ConfigWindow(Plugin plugin) : base(
             "Better Targeting System",
-            // FORCE CAST: Convert ImGuiNET flags to Dalamud.Bindings flags
-            (Dalamud.Bindings.ImGui.ImGuiWindowFlags)(ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+            // Cast: Convert ImGuiNET flags -> Dalamud.Interface.Windowing flags
+            (Dalamud.Interface.Windowing.ImGuiWindowFlags)(ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
         {
             this.Size = new Vector2(185, 270);
-            this.SizeCondition = ImGuiCond.Appearing; 
+            // Cast: Convert ImGuiNET cond -> Dalamud.Interface.Windowing cond
+            this.SizeCondition = (Dalamud.Interface.Windowing.ImGuiCond)ImGuiCond.Appearing; 
 
             this.Plugin = plugin;
             this.Configuration = plugin.Configuration;

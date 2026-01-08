@@ -1,7 +1,7 @@
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Common.Component.BGCollision;
 using System;
-using System.Numerics; // Uses System.Numerics directly
+using System.Numerics; // Using Standard Numerics for everything
 using System.Collections.Generic;
 using Dalamud.Game.ClientState.Objects.Types;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
@@ -59,26 +59,27 @@ public unsafe class Utils
         if (useCamera)
         {
             var cam = CameraManager.Instance()->CurrentCamera;
-            sourcePos = cam->Object.Position; // Auto-converts in new ClientStructs
+            // Manual read to System.Numerics from ClientStructs
+            sourcePos = new Vector3(cam->Object.Position.X, cam->Object.Position.Y, cam->Object.Position.Z);
         }
         else
         {
             if (Plugin.Instance.ClientState.LocalPlayer == null) return false;
             var player = (GameObject*)Plugin.Instance.ClientState.LocalPlayer.Address;
-            sourcePos = player->Position;
-            sourcePos.Y += 2;
+            sourcePos = new Vector3(player->Position.X, player->Position.Y + 2, player->Position.Z);
         }
 
         // 2. Setup Target (System.Numerics)
-        var targetPos = target->Position;
-        targetPos.Y += 2;
+        var tPos = target->Position;
+        var targetPos = new Vector3(tPos.X, tPos.Y + 2, tPos.Z);
 
         // 3. Math
         var direction = targetPos - sourcePos;
         var distance = direction.Length();
         direction = Vector3.Normalize(direction);
 
-        // 4. Raycast (Now accepts System.Numerics.Vector3 pointers)
+        // 4. Raycast
+        // The new API expects pointers to System.Numerics.Vector3 directly.
         RaycastHit hit;
         var flags = stackalloc int[] { 0x4000, 0, 0x4000, 0 };
         
@@ -93,7 +94,8 @@ public unsafe class Utils
         if (addonPtr == IntPtr.Zero)
             return Array.Empty<uint>();
 
-        var addon = (AddonEnemyList*)addonPtr; // Implicit conversion should handle this now
+        // Force cast to nint to unwrap the Dalamud object, then to pointer
+        var addon = (AddonEnemyList*)(nint)addonPtr;
         
         var numArray = RaptureAtkModule->AtkModule.AtkArrayDataHolder.NumberArrays[21];
         var list = new List<uint>(addon->EnemyCount);

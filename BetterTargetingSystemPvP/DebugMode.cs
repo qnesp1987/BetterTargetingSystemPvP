@@ -1,5 +1,5 @@
 using Dalamud.Game.ClientState.Conditions;
-using ImGuiNET; // FIXED: Using standard package, no alias
+using ImGuiNET;
 using System;
 using System.Linq;
 using System.Numerics;
@@ -125,12 +125,10 @@ public unsafe class DebugMode
         
         var camera = CameraManager.Instance()->CurrentCamera;
         var camPos = camera->Object.Position;
+        // Manual conversion to System.Numerics for the utility call
         var sourceV3 = new Vector3(camPos.X, camPos.Y, camPos.Z);
         
-        var tPos = target.Position; 
-        var targetV3 = new Vector3(tPos.X, tPos.Y, tPos.Z);
-
-        var distance = Utils.DistanceBetweenObjects(sourceV3, targetV3, 0);
+        var distance = Utils.DistanceBetweenObjects(sourceV3, target.Position, 0);
         
         var go = (GameObject*)target.Address;
         var size = (int)Math.Round(100 * (25 / distance)) * Math.Max(target.HitboxRadius, go->Height);

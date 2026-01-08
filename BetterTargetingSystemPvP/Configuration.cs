@@ -27,7 +27,6 @@ public class Configuration : IPluginConfiguration
     public Keybind LowestHealthTargetKeybind { get; set; } = new Keybind(VirtualKey.TAB, true, false, false);
     public Keybind BestAOETargetKeybind { get; set; } = new Keybind(null, false, false, false);
 
-    // the below exist just to make saving less cumbersome
     [NonSerialized]
     private IDalamudPluginInterface? PluginInterface;
 

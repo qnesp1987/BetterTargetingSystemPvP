@@ -59,8 +59,6 @@ public unsafe class Keybind
             || this.AltModifier != Plugin.Instance.KeyState[(int) VirtualKey.MENU])
             return false;
 
-        // We use standard Dalamud KeyState for everything now. 
-        // The old code used a memory offset (0x4D8) for mouse keys that is outdated and dangerous.
         return Plugin.Instance.KeyState[(int)this.Key];
     }
 

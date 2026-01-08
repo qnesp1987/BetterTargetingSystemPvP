@@ -8,7 +8,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using BetterTargetingSystem.Windows;
-using ImGuiNET; // Using standard ImGuiNET
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Linq;
