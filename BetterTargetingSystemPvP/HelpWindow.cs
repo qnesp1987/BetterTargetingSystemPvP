@@ -9,12 +9,10 @@ public class HelpWindow : Window, IDisposable
 {
     public HelpWindow(Plugin plugin) : base(
         "Better Targeting System - Help",
-        // Cast: Convert ImGuiNET flags -> Dalamud.Interface.Windowing flags
-        (Dalamud.Interface.Windowing.ImGuiWindowFlags)(ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+        Dalamud.Interface.Windowing.ImGuiWindowFlags.NoResize | Dalamud.Interface.Windowing.ImGuiWindowFlags.NoCollapse | Dalamud.Interface.Windowing.ImGuiWindowFlags.NoScrollbar | Dalamud.Interface.Windowing.ImGuiWindowFlags.NoScrollWithMouse)
     {
         this.Size = new Vector2(768, 512);
-        // Cast: Convert ImGuiNET cond -> Dalamud.Interface.Windowing cond
-        this.SizeCondition = (Dalamud.Interface.Windowing.ImGuiCond)ImGuiCond.Appearing;
+        this.SizeCondition = Dalamud.Interface.Windowing.ImGuiCond.Appearing;
     }
 
     public void Dispose() { }
