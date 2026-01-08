@@ -1,11 +1,11 @@
-using Dalamud.Game.ClientState.Keys;
+﻿using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using System;
 using System.Numerics;
-using BetterTargetingSystem.Keybinds;
+using BetterTargetingSystem.Keybinds;`r`nusing BetterTargetingSystem;
 
-namespace BetterTargetingSystemPvP
+namespace BetterTargetingSystem.Windows
 {
     public class ConfigWindow : Window, IDisposable
     {
@@ -40,3 +40,4 @@ namespace BetterTargetingSystemPvP
         }
     }
 }
+

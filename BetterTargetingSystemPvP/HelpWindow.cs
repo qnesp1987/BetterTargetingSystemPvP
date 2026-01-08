@@ -1,8 +1,8 @@
-using Dalamud.Interface.Windowing;
+﻿using Dalamud.Interface.Windowing;
 using ImGuiNET;
-using System.Numerics;
+using System.Numerics;`r`nusing BetterTargetingSystem;
 
-namespace BetterTargetingSystemPvP
+namespace BetterTargetingSystem.Windows
 {
     public class HelpWindow : Window, System.IDisposable
     {
@@ -29,3 +29,4 @@ namespace BetterTargetingSystemPvP
         }
     }
 }
+
