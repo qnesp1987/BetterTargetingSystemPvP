@@ -1,5 +1,5 @@
 using Dalamud.Interface.Windowing;
-using ImGuiNET; // Standard ImGuiNET
+using ImGuiNET;
 using System;
 using System.Numerics;
 
@@ -9,11 +9,10 @@ public class HelpWindow : Window, IDisposable
 {
     public HelpWindow(Plugin plugin) : base(
         "Better Targeting System - Help",
-        // FORCE CAST: Convert flags
-        (Dalamud.Bindings.ImGui.ImGuiWindowFlags)(ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+        (Dalamud.Interface.Windowing.ImGuiWindowFlags)(ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
     {
         this.Size = new Vector2(768, 512);
-        this.SizeCondition = ImGuiCond.Appearing;
+        this.SizeCondition = (Dalamud.Interface.Windowing.ImGuiCond)ImGuiCond.Appearing;
     }
 
     public void Dispose() { }

@@ -1,7 +1,7 @@
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Common.Component.BGCollision;
 using System;
-using System.Numerics; // Standard Vector3
+using System.Numerics; // Uses System.Numerics directly
 using System.Collections.Generic;
 using Dalamud.Game.ClientState.Objects.Types;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
@@ -19,7 +19,9 @@ public unsafe class Utils
     internal static bool CanAttack(IGameObject obj) => true; 
 
     internal static float DistanceBetweenObjects(IGameObject source, IGameObject target)
-        => DistanceBetweenObjects(source.Position, target.Position, target.HitboxRadius);
+    {
+        return DistanceBetweenObjects(source.Position, target.Position, target.HitboxRadius);
+    }
 
     internal static float DistanceBetweenObjects(Vector3 sourcePos, Vector3 targetPos, float targetHitboxRadius = 0)
     {
@@ -52,42 +54,35 @@ public unsafe class Utils
 
     internal static bool IsInLineOfSight(GameObject* target, bool useCamera = false)
     {
-        // Define sourcePos as System.Numerics.Vector3
+        // 1. Setup Source (System.Numerics)
         Vector3 sourcePos;
-        
         if (useCamera)
         {
             var cam = CameraManager.Instance()->CurrentCamera;
-            // Explicit cast from ClientStructs Vector3 to System.Numerics Vector3
-            var camPos = cam->Object.Position;
-            sourcePos = new Vector3(camPos.X, camPos.Y, camPos.Z);
+            sourcePos = cam->Object.Position; // Auto-converts in new ClientStructs
         }
         else
         {
             if (Plugin.Instance.ClientState.LocalPlayer == null) return false;
             var player = (GameObject*)Plugin.Instance.ClientState.LocalPlayer.Address;
-            var pPos = player->Position;
-            sourcePos = new Vector3(pPos.X, pPos.Y + 2, pPos.Z);
+            sourcePos = player->Position;
+            sourcePos.Y += 2;
         }
 
-        var tPos = target->Position;
-        // Explicit cast for target
-        var targetPos = new Vector3(tPos.X, tPos.Y + 2, tPos.Z);
+        // 2. Setup Target (System.Numerics)
+        var targetPos = target->Position;
+        targetPos.Y += 2;
 
-        // Now we subtract two System.Numerics.Vector3 objects (No ambiguity)
+        // 3. Math
         var direction = targetPos - sourcePos;
         var distance = direction.Length();
-
         direction = Vector3.Normalize(direction);
 
-        // Convert back to ClientStructs Vector3 for the Raycast call
-        var csOrigin = new FFXIVClientStructs.FFXIV.Common.Math.Vector3(sourcePos.X, sourcePos.Y, sourcePos.Z);
-        var csDirection = new FFXIVClientStructs.FFXIV.Common.Math.Vector3(direction.X, direction.Y, direction.Z);
-
+        // 4. Raycast (Now accepts System.Numerics.Vector3 pointers)
         RaycastHit hit;
         var flags = stackalloc int[] { 0x4000, 0, 0x4000, 0 };
         
-        var isLoSBlocked = CSFramework.Instance()->BGCollisionModule->RaycastMaterialFilter(&hit, &csOrigin, &csDirection, distance, 1, flags);
+        var isLoSBlocked = CSFramework.Instance()->BGCollisionModule->RaycastMaterialFilter(&hit, &sourcePos, &direction, distance, 1, flags);
 
         return isLoSBlocked == false;
     }
@@ -98,8 +93,7 @@ public unsafe class Utils
         if (addonPtr == IntPtr.Zero)
             return Array.Empty<uint>();
 
-        // Explicitly cast the wrapper to nint (IntPtr), then to the pointer
-        var addon = (AddonEnemyList*)(nint)addonPtr;
+        var addon = (AddonEnemyList*)addonPtr; // Implicit conversion should handle this now
         
         var numArray = RaptureAtkModule->AtkModule.AtkArrayDataHolder.NumberArrays[21];
         var list = new List<uint>(addon->EnemyCount);

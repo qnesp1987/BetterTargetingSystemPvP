@@ -8,7 +8,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using BetterTargetingSystem.Windows;
-using ImGuiNET = Dalamud.Bindings.ImGui; // CHANGED: Added missing ImGui definition
+using ImGuiNET; // Using standard ImGuiNET
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -131,7 +131,7 @@ public sealed unsafe class Plugin : IDalamudPlugin
         if (ClientState.IsGPosing)
             return;
 
-        if (Utils.IsTextInputActive || ImGuiNET.ImGui.GetIO().WantCaptureKeyboard)
+        if (Utils.IsTextInputActive || ImGui.GetIO().WantCaptureKeyboard)
             return;
 
         Keybinds.Keybind.GetKeyboardState();
@@ -369,7 +369,7 @@ public sealed unsafe class Plugin : IDalamudPlugin
 
             if (o->GetIsTargetable() == false) continue;
 
-            // CHANGED: Use EventHandlerContent instead of obsolete EventHandlerType
+            // Updated EventHandlerType to EventHandlerContent
             if ((o->EventId.ContentId == EventHandlerContent.TreasureHuntDirector || o->EventId.ContentId == EventHandlerContent.BattleLeveDirector)
                 && o->EventId.Id != Player->EventId.Id)
                 continue;
