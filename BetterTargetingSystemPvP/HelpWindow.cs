@@ -1,6 +1,7 @@
 ﻿using Dalamud.Interface.Windowing;
 using ImGuiNET;
-using System.Numerics;`r`nusing BetterTargetingSystem;
+using System.Numerics;
+using BetterTargetingSystem;
 
 namespace BetterTargetingSystem.Windows
 {
@@ -29,4 +30,5 @@ namespace BetterTargetingSystem.Windows
         }
     }
 }
+
 

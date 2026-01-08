@@ -3,7 +3,8 @@ using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using System;
 using System.Numerics;
-using BetterTargetingSystem.Keybinds;`r`nusing BetterTargetingSystem;
+using BetterTargetingSystem.Keybinds;
+using BetterTargetingSystem;
 
 namespace BetterTargetingSystem.Windows
 {
@@ -40,4 +41,5 @@ namespace BetterTargetingSystem.Windows
         }
     }
 }
+
 
