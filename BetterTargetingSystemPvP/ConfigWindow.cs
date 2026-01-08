@@ -1,9 +1,8 @@
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Windowing;
-using ImGuiNET;
+using ImGuiNET; // Back to standard ImGuiNET
 using System;
 using System.Numerics;
-
 using BetterTargetingSystem.Keybinds;
 
 namespace BetterTargetingSystem.Windows
@@ -21,7 +20,8 @@ namespace BetterTargetingSystem.Windows
 
         public ConfigWindow(Plugin plugin) : base(
             "Better Targeting System",
-            ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+            // FORCE CAST: Convert ImGuiNET flags to Dalamud.Bindings flags
+            (Dalamud.Bindings.ImGui.ImGuiWindowFlags)(ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
         {
             this.Size = new Vector2(185, 270);
             this.SizeCondition = ImGuiCond.Appearing; 
@@ -42,13 +42,6 @@ namespace BetterTargetingSystem.Windows
                     KeybindsConfig();
                     ImGui.EndTabItem();
                 }
-                // The original author commented this out, I'm leaving it commented
-                // but keeping the code below in case you want to enable it later.
-                //if (ImGui.BeginTabItem("Settings-Debug"))
-                //{
-                //    SettingsConfig();
-                //    ImGui.EndTabItem();
-                //}
                 ImGui.EndTabBar();
             }
         }
@@ -193,191 +186,6 @@ namespace BetterTargetingSystem.Windows
             Plugin.DebugMode.Draw();
         }
 
-        private void SettingsConfig()
-        {
-            ImGui.Text("\n[Cone 1]");
-            if (ImGui.BeginTable("SettingsConfigTable", 2, ImGuiTableFlags.NoPadOuterX | ImGuiTableFlags.NoPadOuterX))
-            {
-                ImGui.TableSetupColumn("", ImGuiTableColumnFlags.None, 50);
-                ImGui.TableSetupColumn("", ImGuiTableColumnFlags.None, 112);
-                ImGui.TableNextColumn();
-                ImGui.Text("Enabled:");
-                ImGui.TableNextColumn();
-                var alwaysEnabled = true;
-                ImGui.BeginGroup();
-                ImGui.BeginDisabled();
-                ImGui.Checkbox("", ref alwaysEnabled);
-                ImGui.EndDisabled();
-                ImGui.EndGroup();
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("At least one cone must be enabled,\nthis is why you can't disable this one.");
-                ImGui.TableNextColumn();
-                ImGui.Text("Angle:");
-                ImGui.TableNextColumn();
-                ImGui.PushItemWidth(112);
-                var cone1Angle = Configuration.Cone1Angle;
-                var minAngle = Configuration.Cone2Enabled
-                    ? Configuration.Cone2Angle
-                    : (Configuration.Cone3Enabled ? Configuration.Cone3Angle : 10);
-                if (ImGui.DragFloat("##Cone1Angle", ref cone1Angle, .5f, minAngle, 360f))
-                {
-                    cone1Angle = Math.Clamp(cone1Angle, minAngle, 360f);
-                    Configuration.Cone1Angle = (float)Math.Round(cone1Angle, 1);
-                    Configuration.Save();
-                }
-                ImGui.TableNextColumn();
-                ImGui.Text("Distance:");
-                ImGui.TableNextColumn();
-                ImGui.PushItemWidth(112);
-                var cone1Distance = Configuration.Cone1Distance;
-                var maxDistance = Configuration.Cone2Enabled
-                    ? Configuration.Cone2Distance
-                    : (Configuration.Cone3Enabled ? Configuration.Cone3Distance : 40);
-                if (ImGui.DragFloat("##Cone1Distance", ref cone1Distance, .1f, 1f, maxDistance))
-                {
-                    cone1Distance = Math.Clamp(cone1Distance, 1f, maxDistance);
-                    Configuration.Cone1Distance = (float)Math.Round(cone1Distance, 1);
-                    Configuration.Save();
-                }
-                ImGui.EndTable();
-            }
-
-            ImGui.Text("\n[Cone 2]");
-            if (ImGui.BeginTable("SettingsConfigTable", 2, ImGuiTableFlags.NoPadOuterX | ImGuiTableFlags.NoPadOuterX))
-            {
-                ImGui.TableSetupColumn("", ImGuiTableColumnFlags.None, 50);
-                ImGui.TableSetupColumn("", ImGuiTableColumnFlags.None, 112);
-                ImGui.TableNextColumn();
-                ImGui.Text("Enabled:");
-                ImGui.TableNextColumn();
-                var cone2Enabled = Configuration.Cone2Enabled;
-                if (ImGui.Checkbox("", ref cone2Enabled))
-                {
-                    Configuration.Cone2Enabled = cone2Enabled;
-                    Configuration.Save();
-                }
-                ImGui.TableNextColumn();
-                ImGui.Text("Angle:");
-                ImGui.TableNextColumn();
-                ImGui.PushItemWidth(112);
-                var cone2Angle = Configuration.Cone2Angle;
-                var minAngle = Configuration.Cone3Enabled
-                    ? Configuration.Cone3Angle
-                    : 10;
-                if (ImGui.DragFloat("##Cone2Angle", ref cone2Angle, .5f, minAngle, Configuration.Cone1Angle))
-                {
-                    cone2Angle = Math.Clamp(cone2Angle, minAngle, Configuration.Cone1Angle);
-                    Configuration.Cone2Angle = (float)Math.Round(cone2Angle, 1);
-                    Configuration.Save();
-                }
-                ImGui.TableNextColumn();
-                ImGui.Text("Distance:");
-                ImGui.TableNextColumn();
-                ImGui.PushItemWidth(112);
-                var cone2Distance = Configuration.Cone2Distance;
-                var maxDistance = Configuration.Cone3Enabled
-                    ? Configuration.Cone3Distance
-                    : 40;
-                if (ImGui.DragFloat("##Cone2Distance", ref cone2Distance, .1f, Configuration.Cone1Distance, maxDistance))
-                {
-                    cone2Distance = Math.Clamp(cone2Distance, Configuration.Cone1Distance, maxDistance);
-                    Configuration.Cone2Distance = (float)Math.Round(cone2Distance, 1);
-                    Configuration.Save();
-                }
-                ImGui.EndTable();
-            }
-
-            ImGui.Text("\n[Cone 3]");
-            if (ImGui.BeginTable("SettingsConfigTable", 2, ImGuiTableFlags.NoPadOuterX | ImGuiTableFlags.NoPadOuterX))
-            {
-                ImGui.TableSetupColumn("", ImGuiTableColumnFlags.None, 50);
-                ImGui.TableSetupColumn("", ImGuiTableColumnFlags.None, 112);
-                ImGui.TableNextColumn();
-                ImGui.Text("Enabled:");
-                ImGui.TableNextColumn();
-                var cone3Enabled = Configuration.Cone3Enabled;
-                if (ImGui.Checkbox("", ref cone3Enabled))
-                {
-                    Configuration.Cone3Enabled = cone3Enabled;
-                    Configuration.Save();
-                }
-                ImGui.TableNextColumn();
-                ImGui.Text("Angle:");
-                ImGui.TableNextColumn();
-                ImGui.PushItemWidth(112);
-                var cone3Angle = Configuration.Cone3Angle;
-                var maxAngle = Configuration.Cone2Enabled
-                    ? Configuration.Cone2Angle
-                    : Configuration.Cone1Angle;
-                if (ImGui.DragFloat("##Cone3Angle", ref cone3Angle, .5f, 10f, maxAngle))
-                {
-                    cone3Angle = Math.Clamp(cone3Angle, 10f, maxAngle);
-                    Configuration.Cone3Angle = (float)Math.Round(cone3Angle, 1);
-                    Configuration.Save();
-                }
-                ImGui.TableNextColumn();
-                ImGui.Text("Distance:");
-                ImGui.TableNextColumn();
-                ImGui.PushItemWidth(112);
-                var cone3Distance = Configuration.Cone3Distance;
-                var minDistance = Configuration.Cone2Enabled
-                    ? Configuration.Cone2Distance
-                    : Configuration.Cone1Distance;
-                if (ImGui.DragFloat("##Cone3Distance", ref cone3Distance, .1f, minDistance, 40f))
-                {
-                    cone3Distance = Math.Clamp(cone3Distance, minDistance, 40f);
-                    Configuration.Cone3Distance = (float)Math.Round(cone3Distance, 1);
-                    Configuration.Save();
-                }
-                ImGui.EndTable();
-            }
-
-            ImGui.Text("\n[Close Targets Circle]");
-            if (ImGui.BeginTable("SettingsConfigTable", 2, ImGuiTableFlags.NoPadOuterX | ImGuiTableFlags.NoPadOuterX))
-            {
-                ImGui.TableSetupColumn("", ImGuiTableColumnFlags.None, 50);
-                ImGui.TableSetupColumn("", ImGuiTableColumnFlags.None, 112);
-                ImGui.TableNextColumn();
-                ImGui.Text("Enabled:");
-                ImGui.TableNextColumn();
-                var closeTargetsCircleEnabled = Configuration.CloseTargetsCircleEnabled;
-                if (ImGui.Checkbox("", ref closeTargetsCircleEnabled))
-                {
-                    Configuration.CloseTargetsCircleEnabled = closeTargetsCircleEnabled;
-                    Configuration.Save();
-                }
-                ImGui.TableNextColumn();
-                ImGui.Text("Radius:");
-                ImGui.TableNextColumn();
-                ImGui.PushItemWidth(112);
-                var closeTargetsCircleRadius = Configuration.CloseTargetsCircleRadius;
-                if (ImGui.DragFloat("##CloseTargetsCircleRadius", ref closeTargetsCircleRadius, .1f, 1f, 40f))
-                {
-                    closeTargetsCircleRadius = Math.Clamp(closeTargetsCircleRadius, 1f, 40f);
-                    Configuration.CloseTargetsCircleRadius = (float)Math.Round(closeTargetsCircleRadius, 1);
-                    Configuration.Save();
-                }
-                ImGui.EndTable();
-            }
-            ImGui.NewLine();
-            if (ImGui.Button("Reset settings to defaults", new Vector2(170,25)))
-            {
-                Configuration.Cone1Angle = 140;
-                Configuration.Cone1Distance = 5;
-                Configuration.Cone2Enabled = true;
-                Configuration.Cone2Angle = 90;
-                Configuration.Cone2Distance = 15;
-                Configuration.Cone3Enabled = true;
-                Configuration.Cone3Angle = 50;
-                Configuration.Cone3Distance = 40;
-                Configuration.CloseTargetsCircleEnabled = true;
-                Configuration.CloseTargetsCircleRadius = 5;
-                Configuration.Save();
-            }
-
-            Plugin.DebugMode.Draw();
-        }
-
         private void UnfocusInput()
         {
             this.ModifyingKeybindTTK = false;
@@ -385,8 +193,8 @@ namespace BetterTargetingSystem.Windows
             this.ModifyingKeybindLHTK = false;
             this.ModifyingKeybindBAOETK = false;
             this.CurrentKeys = new Keybind();
-            ImGui.SetWindowFocus(null); // unfocus window to clear keyboard focus
-            ImGui.SetWindowFocus(); // refocus window
+            ImGui.SetWindowFocus(null); 
+            ImGui.SetWindowFocus(); 
         }
 
         private Keybind GetKeys()

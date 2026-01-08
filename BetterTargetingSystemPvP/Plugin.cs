@@ -4,14 +4,15 @@ using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.Event; // For EventHandlerType
+using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel; // For Device
+using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using BetterTargetingSystem.Windows;
+using ImGuiNET = Dalamud.Bindings.ImGui; // CHANGED: Added missing ImGui definition
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics; // Required for Vector2
+using System.Numerics;
 using DalamudCharacter = Dalamud.Game.ClientState.Objects.Types.ICharacter;
 using DalamudGameObject = Dalamud.Game.ClientState.Objects.Types.IGameObject;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
@@ -368,14 +369,14 @@ public sealed unsafe class Plugin : IDalamudPlugin
 
             if (o->GetIsTargetable() == false) continue;
 
-            if ((o->EventId.ContentId == EventHandlerType.TreasureHuntDirector || o->EventId.ContentId == EventHandlerType.BattleLeveDirector)
+            // CHANGED: Use EventHandlerContent instead of obsolete EventHandlerType
+            if ((o->EventId.ContentId == EventHandlerContent.TreasureHuntDirector || o->EventId.ContentId == EventHandlerContent.BattleLeveDirector)
                 && o->EventId.Id != Player->EventId.Id)
                 continue;
 
             var distance = Utils.DistanceBetweenObjects(ClientState.LocalPlayer!, obj);
             if (distance > 49) continue;
 
-            // REPLACEMENT: Use safer GameGui method instead of custom ClientStructs calls
             if (GameGui.WorldToScreen(obj.Position, out Vector2 screenPos) == false) 
                 continue;
 
